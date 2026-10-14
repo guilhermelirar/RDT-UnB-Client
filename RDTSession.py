@@ -14,6 +14,7 @@ class RDTSession:
         objeto socket UDP com o timeout configurado
         """
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
+        self.timeout = 2.0
         self.sock.settimeout(timeout)
         self.server: tuple[str, int] = server 
 
@@ -45,20 +46,26 @@ class RDTSession:
                 print(f"[BAD PACKET] pacote mal formado")
 
 
-    def send_req(self, seq: int) -> float:
+    def send_req(self, seq: int):
         """
         Envia uma requisição para o servidor da sessão, solicitando o segmento
         de número de sequência seq 
         """
         request = Packet.req(seq)
         self.sock.sendto(request.encode(), self.server)
-        return time.time()
 
+    def send_ack(self, seq: int):
+        """
+        Envia um ACK com o número de sequencia do segmento recebido
+        """
+        request = Packet.ack(seq)
+        self.sock.sendto(request.encode(), self.server)
 
     def receive_packet(self) -> Packet:
         """
-        Retorna um pacote de dados do servidor, ou levanta exceção em caso 
-        de timeout
+        Espera por um pacote no socket, e em caso de recebimento, 
+        retorna um objeto Packet e um float correspondente ao tempo 
+        que o pacote foi recebido. Em caso de timeout, lança uma exceção
         """
         data, _ = self.sock.recvfrom(1024)
         return Packet.parse(data)
