@@ -5,7 +5,7 @@ class Packet:
                             "REQ", "DATA",
                             "ACK", "FIN", 
                             "DONE", "PING", 
-                            "PONG"]:
+                            "PONG", "ERROR"]:
             raise ValueError(f"Tipo de pacote inválido: {p_type}")
         
         self.type: str = p_type
@@ -29,6 +29,18 @@ class Packet:
             "file": file_type
         }
         
+        return p
+
+    @staticmethod
+    def req(seq: int):
+        p = Packet("REQ")
+        p._fields = {"seq": str(seq)}
+        return p
+
+    @staticmethod
+    def ack(seq: int):
+        p = Packet("ACK")
+        p._fields = {"seq": str(seq)}
         return p
 
     @staticmethod
@@ -66,6 +78,10 @@ class Packet:
     def __repr__(self) -> str:
         str_list = [self.type]
         str_list.extend([f"{k}={self._fields[k]}" for k in self._fields])
+
+        if self.payload:
+            str_list.append(f"<{len(self.payload)} bytes>")
+
         return "|".join(str_list) 
 
     def encode(self) -> bytes:
@@ -76,5 +92,12 @@ class Packet:
             return header_bytes + b"|" + self.payload
         return header_bytes
     
-    def get(self, field: str):
-        return self._fields.get(field)
+    def get(self, field: str, fallback = None):
+        return self._fields.get(field, fallback)
+    
+    @property
+    def payload_size(self) -> int:
+        if self.payload:
+            return len(self.payload)
+
+        return 0
