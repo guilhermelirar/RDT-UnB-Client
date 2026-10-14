@@ -15,29 +15,34 @@ class RDTConfig:
 def request(data: bytes,
             server: tuple[str, int], 
             skt: socket.socket, 
-            timeout = 5.0) -> tuple[bytes | None, float]:
+            timeout = 5.0, max_attempts: int = 1) -> tuple[bytes | None, float]:
     """
     Envia requisição ao servidor especificado, e retorna tupla 
-    com a resposta em bytes e o RTT da comunicação. Em caso de timeout,
-    a resposta será None
+    com a resposta em bytes e o RTT da comunicação. 
+    Em caso de exceder número de tentativas, a resposta será None
     """
     rtt_ms: float = 0.0
 
-    try:
-        start = time.time()
-        skt.sendto(data, server)
-        skt.settimeout(timeout)
-        
-        data_response, _ = skt.recvfrom(512)
+    attempt = 0
+    while (attempt < max_attempts):
+        try:
+            start = time.time()
+            skt.sendto(data, server)
+            skt.settimeout(timeout)
+            
+            data_response, _ = skt.recvfrom(512)
 
-        end = time.time()
-        rtt_ms = (end - start) * 1000.0
-        print("RTT (ms):", rtt_ms)
+            end = time.time()
+            rtt_ms = (end - start) * 1000.0
+            print("RTT (ms):", rtt_ms)
+            return data_response, timeout
 
-    except socket.timeout:
-        data_response = None
+        except socket.timeout:
+            print(f"TIMEOUT ({timeout} ms) at attempt {attempt+1/max_attempts}")
+            data_response = None
 
-    return data_response, rtt_ms
+    return None, timeout
+
 
 def send_hello(cfg: RDTConfig, skt: socket.socket, timeout = 5.0):
     header = ['HELLO', 
@@ -47,11 +52,27 @@ def send_hello(cfg: RDTConfig, skt: socket.socket, timeout = 5.0):
     
     header_bytes = '|'.join(header).encode()
     
-    response, _ = request(header_bytes, (cfg.server, cfg.port), skt, timeout)
+    response, rtt = request(header_bytes, 
+                          (cfg.server, cfg.port), 
+                          skt, timeout, 5)
+   
     if response:
-        print("Hello response:", response.decode())
-    else:
-        print("TIMEOUT")
+        return response.decode(), rtt
+
+    return None, rtt
+
+def parse_hello(data: str) -> dict:
+    fields = data.split('|')
+    d = {"label": data[0]}
+
+    for f in fields[1:]:
+        key = f.split('=')[0]
+        value = f.split('=')[1]
+
+        d[key] = value
+        
+
+    return d
 
 def run_rdt(args: Namespace):
     config = RDTConfig(server=args.server, 
@@ -59,5 +80,7 @@ def run_rdt(args: Namespace):
                        group=args.group)
     
     skt = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)   
-    send_hello(config, skt, 0.5)
-      
+    data, rtt = send_hello(config, skt, 0.5)
+   
+    if data:
+        print(parse_hello(data))
