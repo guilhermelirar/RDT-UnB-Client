@@ -43,14 +43,14 @@ class StopAndWait:
 
                 segment = self.session.receive_packet()
                 timestamp = time.perf_counter()
-                
-                print("[LOG]", segment)
+               
+                if seq % 256 == 0 or seq == total - 1:
+                    print("[LOG]", segment)
 
                 if segment.type == "DATA" and segment.get("seq") == seq:
                     # métricas
                     rtt_ms = self.get_rtt_ms(start_rtt, timestamp)
-                    throughput_kbps = segment.payload_size / \
-                            ((rtt_ms / 1000.0) * 1024)
+                    throughput_kbps = (segment.payload_size * 8.0) / rtt_ms
 
                     log_list.append({
                         "segment": seq,
@@ -83,5 +83,9 @@ class StopAndWait:
         
         if (calculated_md5 != ok_pkt.get("checksum")):
             print(f"[ERROR] checksum incorreto")
+        else:
+            print("Checksum OK")
+
+        print("md5_hash: ", calculated_md5)
 
         return log_list

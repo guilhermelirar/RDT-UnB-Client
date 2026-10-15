@@ -25,6 +25,7 @@ def main():
     log_list = protocol.run(group, MAX_SEGMENT_SIZE, file_type)
     save_metrics_csv(log_list, group, "saw")
 
+    session.close()
 
 if __name__ == "__main__":
     main()

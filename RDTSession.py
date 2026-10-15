@@ -69,3 +69,6 @@ class RDTSession:
         """
         data, _ = self.sock.recvfrom(1024)
         return Packet.parse(data)
+
+    def close(self):
+        self.sock.close()
