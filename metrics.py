@@ -13,7 +13,8 @@ def save_metrics_csv(log_list: list[dict], group: str, protocol: str):
     file_name = gen_name(group, protocol)
     if not log_list:
         print("[AVISO] Nenhuma métrica para salvar")
-    
+        return
+
     cols = list(log_list[0].keys())
 
     with open(file_name, mode="w", newline="", encoding="utf-8") as f:
