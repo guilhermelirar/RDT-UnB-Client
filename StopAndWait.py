@@ -12,10 +12,6 @@ class StopAndWait:
         self.file_buffer = []
         self.expectedmd5: str = ""
 
-    @staticmethod
-    def get_rtt_ms(start: float, end: float) -> float:
-        return (end - start) * 1000.0
-
     def collect_metrics(self, seq: int, timestamps: tuple[float, float], 
                     payload_size: int, retries: int):
         PROTOCOL = "saw"
@@ -35,13 +31,13 @@ class StopAndWait:
             "window_size": WINDOW_SIZE,
             "protocol": PROTOCOL
         })
-    
-    def run(self, group: str, segment_size: int, file_type: str):
+   
+    def _connect(self, group: str, segment_size: int, file_type: str) -> int:
         ok_pkt = self.session.connect(group, segment_size, file_type)
 
         if not ok_pkt:
             print("Conexão não pode ser estabelecida...")
-            return []
+            return 0
 
         print(ok_pkt)
         self.expectedmd5 = str(ok_pkt.get("checksum"))
@@ -49,8 +45,12 @@ class StopAndWait:
         total = ok_pkt.get("total_segments")
         if not (isinstance(total, int) and total > 0):
             print("Não há segmentos para obter...")
-            return [] 
-        
+            return 0 
+
+        return total
+
+    def run(self, group: str, segment_size: int, file_type: str):
+        total = self._connect(group, segment_size, file_type)
         seq = 0
         retries = 0
         req_timestamp = 0
