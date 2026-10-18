@@ -1,6 +1,6 @@
 # StopAndWait.py
-from Packet import Packet
-from RDTSession import RDTSession
+from packet import Packet
+from rdt_session import RDTSession
 from socket import timeout as TimeoutError
 import time
 

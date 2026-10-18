@@ -1,6 +1,6 @@
 from cli import MAX_SEGMENT_SIZE, get_args
-from RDTSession import RDTSession
-from StopAndWait import StopAndWait
+from rdt_session import RDTSession
+from stop_and_wait import StopAndWait
 from metrics import save_metrics_csv
 from file_manager import save_downloaded_file
 

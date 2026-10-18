@@ -1,5 +1,5 @@
 import socket, time
-from Packet import Packet
+from packet import Packet
 
 class RDTSession:
     """
