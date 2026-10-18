@@ -1,4 +1,5 @@
 # StopAndWait.py
+from Packet import Packet
 from RDTSession import RDTSession
 from socket import timeout as TimeoutError
 import time
@@ -49,6 +50,16 @@ class StopAndWait:
 
         return total
 
+    def _get_next_segment(self, seq: int) -> Packet:
+        while True:
+            seg: Packet = self.session.receive_packet()
+
+            # retorna apenas se é de fato um pacote de dados.
+            # se não, limpa o buffer até encontrar ou timeout()
+            if seg.type == "DATA" and seg.get("seq") == seq: 
+                return seg
+        
+
     def run(self, group: str, segment_size: int, file_type: str):
         total = self._connect(group, segment_size, file_type)
         seq = 0
@@ -61,23 +72,22 @@ class StopAndWait:
                 if retries == 0:
                     req_timestamp = time.perf_counter()
 
-                segment = self.session.receive_packet()
+                segment = self._get_next_segment(seq)
                 rsp_timestamp = time.perf_counter()
                
                 if seq % 256 == 0 or seq == total - 1:
                     print("[LOG]", segment)
 
-                if segment.type == "DATA" and segment.get("seq") == seq:
-                    # métricas
-                    timestamps = (req_timestamp, rsp_timestamp)
-                    self.collect_metrics(seq, timestamps, 
-                                         segment.payload_size, retries)
+                # métricas
+                timestamps = (req_timestamp, rsp_timestamp)
+                self.collect_metrics(seq, timestamps, 
+                                     segment.payload_size, retries)
 
-                    self.file_buffer.append(segment.payload)
-                    # self.session.send_ack(seq)
+                self.file_buffer.append(segment.payload)
+                # self.session.send_ack(seq)
 
-                    retries = 0 # Para próximo seq
-                    seq += 1
+                retries = 0 # Para próximo seq
+                seq += 1
 
             except TimeoutError:
                 retries += 1
