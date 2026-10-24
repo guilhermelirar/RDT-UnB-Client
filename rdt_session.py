@@ -1,5 +1,6 @@
 import socket, time
 from packet import Packet
+import random
 
 class RDTSession:
     """
@@ -8,7 +9,7 @@ class RDTSession:
     de mensagens, utilizando um socket UDP
     """
 
-    def __init__(self, server, timeout = 2.0) -> None:
+    def __init__(self, server, timeout = 2.0, simulated_loss: int = 0) -> None:
         """
         Configura endereço ip:porta do servidor de destino, e cria o 
         objeto socket UDP com o timeout configurado
@@ -17,6 +18,7 @@ class RDTSession:
         self.timeout = 2.0
         self.sock.settimeout(timeout)
         self.server: tuple[str, int] = server 
+        self.loss = simulated_loss
 
     def connect(self, group: str, 
                 segment_size: int, file_type: str) -> Packet | None:
@@ -51,6 +53,9 @@ class RDTSession:
         Envia uma requisição para o servidor da sessão, solicitando o segmento
         de número de sequência seq 
         """
+        if random.random() < (self.loss / 100):
+            return 
+
         request = Packet.req(seq)
         self.sock.sendto(request.encode(), self.server)
 

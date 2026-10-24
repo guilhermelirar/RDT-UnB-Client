@@ -1,10 +1,10 @@
 import hashlib
 from cli import MAX_SEGMENT_SIZE, get_args
+from protocols.base_protocol import BaseProtocol
 from protocols.go_back_n import GoBackN
 from rdt_session import RDTSession
 from protocols.stop_and_wait import StopAndWait
 from metrics import save_metrics_csv
-
 
 PORT = 8080
 
@@ -27,6 +27,16 @@ def save_downloaded_file(file_buffer: list[bytes],
 
     return ok
 
+def get_selected_protocol(args, session: RDTSession) -> BaseProtocol:
+    if args.protocol == "saw":
+        return StopAndWait(session)
+    elif args.protocol == "gbn":
+        return GoBackN(session, args.window_size)
+    elif args.protocol == "sr":
+        raise NotImplemented
+
+    raise ValueError("Protocol '{}' does not exist")
+
 def main():
     args = get_args()
 
@@ -36,15 +46,14 @@ def main():
     group = args.group
 
     # sessão RDT
-    session = RDTSession(server)
-
-    # protocolo de envio e retransmissão
-    #protocol = StopAndWait(session)
-    protocol = GoBackN(session, 4)
+    session = RDTSession(server, simulated_loss=args.loss)
+    protocol: BaseProtocol = get_selected_protocol(args, session)
 
     # obter arquivo do servidor
     protocol.run(group, MAX_SEGMENT_SIZE, file_type)
-    save_metrics_csv(protocol.metrics, group, protocol.name)
+    save_metrics_csv(protocol.metrics, group, protocol.name,
+                     file_type, 0, protocol.window_size)
+
     save_downloaded_file(protocol.file_buffer,
                          f"downloaded_{file_type}_{protocol.name}_.bin",
                          protocol.expectedmd5)

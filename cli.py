@@ -38,11 +38,37 @@ def create_parser() -> argparse.ArgumentParser:
             help="Tamanho do arquivo (small, medium, large)"
     )
 
+    # protocolo
+    parser.add_argument(
+            "--protocolo", "-p",
+            type=str,
+            choices=["saw","gbn","sr"],
+            help="Protocolo (saw, gbn, sr)",
+            required=True
+    )
+    
+    # grupo
     parser.add_argument(
             "--group", "-g",
             type=str,
             help="Identificador do grupo",
             required=True
+    )
+    
+    # perda da rede simulada
+    parser.add_argument(
+            "--loss", "-l",
+            type=int,
+            default=0,
+            help="Perda (padrão 0%)",
+    )
+
+    # Tamanho da janela para gbn e sr
+    parser.add_argument(
+            "--window-size", "-w",
+            type=int,
+            default=8,
+            help="Perda (padrão 8 - exceto SAW)",
     )
 
     return parser
