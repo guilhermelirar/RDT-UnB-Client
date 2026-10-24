@@ -65,7 +65,7 @@ def create_parser() -> argparse.ArgumentParser:
 
     # Tamanho da janela para gbn e sr
     parser.add_argument(
-            "--window-size", "-w",
+            "--window_size", "-w",
             type=int,
             default=8,
             help="Window size for Go-Back-N and Selective Repeat",

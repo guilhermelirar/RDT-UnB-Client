@@ -90,7 +90,7 @@ def run_exp(protocol: str, window: int, file_type: str, loss: int):
 
 
 def main():
-  for ft in ["small", "medium"]:
+  for ft in ["small", "medium", "large"]:
     run_exp("saw", 1, ft, 0)
     for w in [4, 8]:
       run_exp("gbn", w, ft, 0)
