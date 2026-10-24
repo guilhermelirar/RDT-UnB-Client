@@ -9,7 +9,7 @@ class BaseProtocol:
     def __init__(self, session: RDTSession, 
                  window_size: int, name: str) -> None:
         self.session = session
-        self.metrics = []
+        self.metrics: list[dict | None]
         self.file_buffer = []
         self.expectedmd5: str = ""
         self.window_size: int = window_size
@@ -26,8 +26,7 @@ class BaseProtocol:
     ):
         throughput_kbps = payload_size * 8.0 / rtt_ms
 
-        self.metrics.append(
-            {
+        self.metrics[seq] = {
                 "segment": seq,
                 "timestamp": timestamp,
                 "size_bytes": payload_size,
@@ -39,7 +38,6 @@ class BaseProtocol:
                 "window_size": self.window_size,
                 "protocol": self.name,
             }
-        )
 
     def _connect(self, group: str, segment_size: int, file_type: str) -> int:
         ok_pkt = self.session.connect(group, segment_size, file_type)
@@ -57,6 +55,7 @@ class BaseProtocol:
             return 0
 
         self.file_buffer = [b""] * total
+        self.metrics = [None] * total
         return total
 
     def _get_next_segment(self, seq: int) -> Packet:

@@ -10,7 +10,7 @@ def gen_name(group: str, protocol: str) -> str:
     file_name = f"metrics_{group}_{protocol}_{timestamp_str}.csv"
     return file_name
 
-def save_metrics_csv(log_list: list[dict], group: str, 
+def save_metrics_csv(log_list: list, group: str, 
                      protocol: str, file_type: str, loss: int, window: int = 1):
     if not log_list:
         print("[AVISO] Nenhuma métrica para salvar")
