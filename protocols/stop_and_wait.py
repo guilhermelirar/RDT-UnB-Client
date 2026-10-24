@@ -21,7 +21,9 @@ class StopAndWait(BaseProtocol):
         """
         total = self._connect(group, segment_size, file_type)
         seq = 0
-        
+        total_retries = 0 
+        start_time = time.perf_counter()
+
         # Enquanto há DATA para receber
         while seq < total:
             retries = 0
@@ -38,16 +40,19 @@ class StopAndWait(BaseProtocol):
                     # métricas e salvar  
                     rtt_ms = (rsp_time - req_sent_time) * 1000.0
                     self.collect_metrics(
-                        seq, req_timestamp, rtt_ms, segment.payload_size, retries
+                        seq, req_timestamp, rtt_ms, 
+                        segment.payload_size, retries
                     )
 
                     self.file_buffer[seq] = segment.payload
+
                     seq += 1
+                    self.log_progress(seq, total, start_time, total_retries)
                     break # sai do loop em caso de sucesso 
 
                 except TimeoutError:
                     retries += 1
-                    print(f"[TIMEOUT] seq={seq} tentativa {retries}/{self.MAX_RETRIES}")
+                    total_retries += 1 
 
             else:
                 # executado em caso de MAX_RETRIES 

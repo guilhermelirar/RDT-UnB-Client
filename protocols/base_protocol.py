@@ -1,5 +1,5 @@
 from abc import abstractmethod
-
+import time
 from rdt_session import RDTSession
 from packet import Packet
 
@@ -14,6 +14,7 @@ class BaseProtocol:
         self.expectedmd5: str = ""
         self.window_size: int = window_size
         self.name = name
+        self.progress: int = 0
 
     def collect_metrics(
         self,
@@ -67,6 +68,39 @@ class BaseProtocol:
             if seg.type == "DATA" and seg.seq == seq:
                 return seg
 
+    def log_progress(self, seq: int, 
+                     total_segments: int, 
+                     start_time: float,
+                     total_retries: int):
+        
+        if total_segments <= 0:
+            return
+
+        pct_int = (seq * 100) // total_segments
+        is_last = (seq == total_segments)
+
+        if pct_int == self.progress and not is_last:
+            return
+
+        self.progress = pct_int
+
+        elapsed = max(0.0001, time.perf_counter() - start_time)
+        percent_float = (seq / total_segments) * 100
+
+        throughput_kbps = (8 * 512 * seq) / (elapsed * 1000.0)
+
+        print(
+            f"\r[{self.name.upper()} | Win {self.window_size}] "
+            f"Progress: {percent_float:5.1f}% ({throughput_kbps:8.2f} kbps) "
+            f"| Retries: {total_retries}",
+            end="",
+            flush=True
+        )
+
+        if is_last:
+            print()
+
     @abstractmethod
     def run(self, group: str, segment_size: int, file_type: str):
         raise NotImplemented
+
