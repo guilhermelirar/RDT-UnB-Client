@@ -52,7 +52,7 @@ def main():
     # obter arquivo do servidor
     protocol.run(group, MAX_SEGMENT_SIZE, file_type)
     save_metrics_csv(protocol.metrics, group, protocol.name,
-                     file_type, 0, protocol.window_size)
+                     file_type, args.loss, protocol.window_size)
 
     save_downloaded_file(protocol.file_buffer,
                          f"downloaded_{file_type}_{protocol.name}_.bin",

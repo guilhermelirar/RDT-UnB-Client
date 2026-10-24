@@ -40,7 +40,7 @@ def create_parser() -> argparse.ArgumentParser:
 
     # protocolo
     parser.add_argument(
-            "--protocolo", "-p",
+            "--protocol", "-p",
             type=str,
             choices=["saw","gbn","sr"],
             help="Protocolo (saw, gbn, sr)",
@@ -60,7 +60,7 @@ def create_parser() -> argparse.ArgumentParser:
             "--loss", "-l",
             type=int,
             default=0,
-            help="Perda (padrão 0%)",
+            help="Percent of simulated loss (default0%%)",
     )
 
     # Tamanho da janela para gbn e sr
@@ -68,7 +68,7 @@ def create_parser() -> argparse.ArgumentParser:
             "--window-size", "-w",
             type=int,
             default=8,
-            help="Perda (padrão 8 - exceto SAW)",
+            help="Window size for Go-Back-N and Selective Repeat",
     )
 
     return parser

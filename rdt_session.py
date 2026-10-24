@@ -9,7 +9,7 @@ class RDTSession:
     de mensagens, utilizando um socket UDP
     """
 
-    def __init__(self, server, timeout = 2.0, simulated_loss: int = 0) -> None:
+    def __init__(self, server, timeout = 1.0, simulated_loss: int = 0) -> None:
         """
         Configura endereço ip:porta do servidor de destino, e cria o 
         objeto socket UDP com o timeout configurado
