@@ -5,70 +5,14 @@ from socket import timeout as TimeoutError
 
 from packet import Packet
 from rdt_session import RDTSession
+from protocols.base_protocol import BaseProtocol
 
-
-class GoBackN:
+class GoBackN(BaseProtocol):
     MAX_RETRIES = 5
 
-    def __init__(self, session: RDTSession) -> None:
-        self.session = session
-        self.metrics = []
-        self.file_buffer = []
-        self.expectedmd5: str = ""
-        self.window_size: int = 16
-        self.protocol_name = "gbn"
-
-    def collect_metrics(
-        self,
-        seq: int,
-        timestamp: str,
-        rtt_ms: float,
-        payload_size: int,
-        retries: int,
-    ):
-        throughput_kbps = payload_size * 8.0 / rtt_ms
-
-        self.metrics.append(
-            {
-                "segment": seq,
-                "timestamp": timestamp,
-                "size_bytes": payload_size,
-                "rtt_ms": rtt_ms,
-                "timeout_ms": self.session.timeout * 1000.0,
-                "throughput_kbps": throughput_kbps,
-                "retransmissions": retries,
-                "timeout_ocurred": 0 if retries == 0 else 1,
-                "window_size": self.window_size,
-                "protocol": self.protocol_name,
-            }
-        )
-
-    def _connect(self, group: str, segment_size: int, file_type: str) -> int:
-        ok_pkt = self.session.connect(group, segment_size, file_type)
-
-        if not ok_pkt:
-            print("Conexão não pode ser estabelecida...")
-            return 0
-
-        print(ok_pkt)
-        self.expectedmd5 = str(ok_pkt.get("checksum"))
-
-        total = ok_pkt.get("total_segments")
-        if not (isinstance(total, int) and total > 0):
-            print("Não há segmentos para obter...")
-            return 0
-
-        return total
-
-    def _get_next_segment(self, seq: int) -> Packet:
-        while True:
-            seg: Packet = self.session.receive_packet()
-
-            # retorna apenas se é de fato um pacote de dados.
-            # se não, limpa o buffer até encontrar ou timeout()
-            if seg.type == "DATA" and seg.seq == seq:
-                return seg
-
+    def __init__(self, session: RDTSession, window_size: int) -> None:
+        super().__init__(session, window_size, "gbn")
+        
     def run(self, group: str, segment_size: int, file_type: str):
         total = self._connect(group, segment_size, file_type)
 
@@ -96,7 +40,7 @@ class GoBackN:
 
             # espera receber o segmento desejado
             try:
-                seg = self._get_next_segment(base)
+                seg: Packet = self._get_next_segment(base)
 
                 # atualizar métrica
                 rtt_ms = (time.perf_counter() - time_sent[base]) * 1000.0
@@ -106,7 +50,8 @@ class GoBackN:
                     base, timestamp, rtt_ms, seg.payload_size, retries_by_segment[base]
                 )
 
-                self.file_buffer.append(seg.payload)
+                # Salvar no buffer
+                self.file_buffer[base] = seg.payload
 
                 print(f"received {base}/{total}")
 
