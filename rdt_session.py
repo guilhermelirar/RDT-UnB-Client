@@ -15,10 +15,14 @@ class RDTSession:
         objeto socket UDP com o timeout configurado
         """
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
-        self.timeout = 2.0
+        self.timeout = timeout
         self.sock.settimeout(timeout)
         self.server: tuple[str, int] = server 
         self.loss = simulated_loss
+
+    def set_timeout(self, timeout: float):
+        self.timeout = timeout
+        self.sock.settimeout(timeout)
 
     def connect(self, group: str, 
                 segment_size: int, file_type: str) -> Packet | None:

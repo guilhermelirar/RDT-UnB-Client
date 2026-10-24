@@ -11,8 +11,9 @@ class SelectiveRepeat(BaseProtocol):
     MAX_RETRIES = 5
 
     def __init__(self, session: RDTSession, window_size: int) -> None:
-        super().__init__(session, window_size, "gbn")
-        self.timeout = 1.0
+        super().__init__(session, window_size, "sr")
+        self.timeout = 0.5
+        self.session.set_timeout(0.1)
         
     def run(self, group: str, segment_size: int, file_type: str):
         total = self._connect(group, segment_size, file_type)
@@ -29,7 +30,7 @@ class SelectiveRepeat(BaseProtocol):
         start_time = time.perf_counter()
         
         while received != total:
-            # deslizar a janela
+            # deslizar janela
             while next_seq_num < base + self.window_size and\
                     next_seq_num < total:
                 self.session.send_req(next_seq_num)
@@ -42,17 +43,23 @@ class SelectiveRepeat(BaseProtocol):
             # requisitar os segmentos da janela em caso de timeout
             for seq in window:
                 timeout = (time.perf_counter() - last_sent[seq]) > self.timeout
-                if timeout:
+                if timeout and not self.file_buffer[seq]:
                     self.session.send_req(seq)
                     retries_by_segment[seq] += 1
+                    total_retries += 1
                     last_sent[seq] = time.perf_counter()
             
             # espera receber o segmento desejado
             try:
                 seg: Packet = self.session.receive_packet()
-                if seg.type != "DATA" or seg.seq not in window:
-                    continue
                 
+                if (
+                    seg.type != "DATA"
+                    or not (base <= seg.seq < base + self.window_size)
+                    or self.file_buffer[seg.seq]
+                ):
+                    continue
+                            
                 # atualizar métrica
                 rtt_ms = (time.perf_counter() - first_sent[seg.seq]) * 1000.0
                 timestamp = datetime.now().isoformat()
@@ -67,7 +74,11 @@ class SelectiveRepeat(BaseProtocol):
                 
                 # mover janela e requisitar mais um pacote
                 received += 1
-                base += 1
+                
+                # deslizar janela
+                while base < total and self.file_buffer[base]:
+                    base += 1
+
                 self.log_progress(base, total, start_time, total_retries)
 
             except TimeoutError:  # timeout na base -> retry da janela atual

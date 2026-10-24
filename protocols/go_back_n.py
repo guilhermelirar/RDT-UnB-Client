@@ -36,6 +36,7 @@ class GoBackN(BaseProtocol):
                 # atualizando métricas
                 if retries_this_window:
                     retries_by_segment[next_seq_num] += 1
+                    total_retries += 1
                 else:
                     time_sent[next_seq_num] = time.perf_counter()
 
@@ -67,6 +68,5 @@ class GoBackN(BaseProtocol):
                 if retries_this_window == self.MAX_RETRIES:
                     return
                 
-                total_retries += 1
                 retries_this_window += 1
                 next_seq_num = base
