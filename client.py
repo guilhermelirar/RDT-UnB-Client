@@ -1,10 +1,13 @@
 import hashlib
+from socket import timeout
 from cli import MAX_SEGMENT_SIZE, get_args
+from rdt_session import RDTSession
+from metrics import save_metrics_csv
+
 from protocols.base_protocol import BaseProtocol
 from protocols.go_back_n import GoBackN
-from rdt_session import RDTSession
 from protocols.stop_and_wait import StopAndWait
-from metrics import save_metrics_csv
+from protocols.selective_repeat import SelectiveRepeat
 
 PORT = 8080
 
@@ -32,10 +35,8 @@ def get_selected_protocol(args, session: RDTSession) -> BaseProtocol:
         return StopAndWait(session)
     elif args.protocol == "gbn":
         return GoBackN(session, args.window_size)
-    elif args.protocol == "sr":
-        raise NotImplemented
-
-    raise ValueError("Protocol '{}' does not exist")
+    
+    return SelectiveRepeat(session, args.window_size)
 
 def main():
     args = get_args()
@@ -46,7 +47,7 @@ def main():
     group = args.group
 
     # sessão RDT
-    session = RDTSession(server, simulated_loss=args.loss)
+    session = RDTSession(server, timeout=0.5, simulated_loss=args.loss)
     protocol: BaseProtocol = get_selected_protocol(args, session)
 
     # obter arquivo do servidor
@@ -55,7 +56,7 @@ def main():
                      file_type, args.loss, protocol.window_size)
 
     save_downloaded_file(protocol.file_buffer,
-                         f"downloaded_{file_type}_{protocol.name}_.bin",
+                         f"bin/downloaded_{file_type}_{protocol.name}_.bin",
                          protocol.expectedmd5)
 
     session.close()
