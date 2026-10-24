@@ -2,7 +2,7 @@ from datetime import datetime
 import subprocess
 import time
 
-protocols = ["saw", "gbn"]
+protocols = ["saw", "gbn", "sr"]
 wsizes = [4, 8, 16]
 losses = [5, 10]
 file_types = ["small", "medium", "large"]
