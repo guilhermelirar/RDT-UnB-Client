@@ -19,6 +19,7 @@ class RDTSession:
         self.sock.settimeout(timeout)
         self.server: tuple[str, int] = server 
         self.loss = simulated_loss
+        self.dropped_seq = set()
 
     def set_timeout(self, timeout: float):
         self.timeout = timeout
@@ -51,6 +52,8 @@ class RDTSession:
             except ValueError:
                 print(f"[BAD PACKET] pacote mal formado")
 
+    def was_dropped(self, seq: int) -> bool:
+        return seq in self.dropped_seq
 
     def send_req(self, seq: int):
         """
@@ -58,7 +61,7 @@ class RDTSession:
         de número de sequência seq 
         """
         if random.random() < (self.loss / 100):
-            return 
+            return self.dropped_seq.add(seq) 
 
         request = Packet.req(seq)
         self.sock.sendto(request.encode(), self.server)

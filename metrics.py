@@ -15,8 +15,7 @@ def save_metrics_csv(log_list: list, group: str,
     if not log_list:
         print("[AVISO] Nenhuma métrica para salvar")
         return None
-
-    # 1. Monta o caminho da SUBPASTA do experimento
+    
     if protocol.lower() == "saw":
         folder = METRICS_DIR / "saw" / file_type
     else:

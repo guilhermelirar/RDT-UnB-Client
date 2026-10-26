@@ -9,7 +9,7 @@ class BaseProtocol:
     def __init__(self, session: RDTSession, 
                  window_size: int, name: str) -> None:
         self.session = session
-        self.metrics: list[dict | None]
+        self.metrics: list[dict | None] = []
         self.file_buffer = []
         self.expectedmd5: str = ""
         self.window_size: int = window_size
@@ -37,6 +37,7 @@ class BaseProtocol:
                 "timeout_ocurred": 0 if retries == 0 else 1,
                 "window_size": self.window_size,
                 "protocol": self.name,
+                "simulated_loss": 1 if self.session.was_dropped(seq) else 0
             }
 
     def _connect(self, group: str, segment_size: int, file_type: str) -> int:
