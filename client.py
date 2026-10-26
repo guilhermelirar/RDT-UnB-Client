@@ -47,13 +47,23 @@ def main():
     group = args.group
 
     # sessão RDT
-    session = RDTSession(server, timeout=0.5, simulated_loss=args.loss)
+    session = RDTSession(server, timeout=0.6, simulated_loss=args.loss)
     protocol: BaseProtocol = get_selected_protocol(args, session)
 
     # obter arquivo do servidor
     protocol.run(group, MAX_SEGMENT_SIZE, file_type)
-    save_metrics_csv(protocol.metrics, group, protocol.name,
-                     file_type, args.loss, protocol.window_size)
+
+    valid_metrics = [m for m in protocol.metrics if m is not None]
+
+    if valid_metrics:
+      save_metrics_csv(
+          valid_metrics,
+          group,
+          protocol.name,
+          file_type,
+          args.loss,
+          protocol.window_size,
+      )
 
     save_downloaded_file(protocol.file_buffer,
                          f"bin/downloaded_{file_type}_{protocol.name}_.bin",
