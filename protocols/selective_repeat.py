@@ -13,10 +13,10 @@ class SelectiveRepeat(BaseProtocol):
     def __init__(self, session: RDTSession, window_size: int) -> None:
         super().__init__(session, window_size, "sr")
         self.timeout = 0.5
-        self.session.set_timeout(0.1)
         
     def run(self, group: str, segment_size: int, file_type: str):
         total = self._connect(group, segment_size, file_type)
+        self.session.set_timeout(0.1)
 
         # vetores importantes para métrica
         first_sent: list[float] = [0.0] * total
@@ -31,6 +31,7 @@ class SelectiveRepeat(BaseProtocol):
         
         while received != total:
             # deslizar janela
+
             while next_seq_num < base + self.window_size and\
                     next_seq_num < total:
                 self.session.send_req(next_seq_num)

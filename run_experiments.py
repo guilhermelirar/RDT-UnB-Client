@@ -6,6 +6,24 @@ import time
 SUMMARY_FILE = Path("experiments_summary.csv")
 GROUP = "grupo13"
 
+
+def experiment_already_exists(
+    protocol: str, window: int, file_type: str, loss: int
+) -> bool:
+  """Verifica se já existe um CSV gravado para esta combinação exata."""
+  if protocol == "saw":
+    folder = Path("metrics") / "saw" / file_type
+  else:
+    folder = Path("metrics") / protocol / f"win_{window}" / file_type
+
+  if not folder.exists():
+    return False
+
+  # Procura por arquivos com o sufixo de loss correto
+  files = list(folder.glob(f"*_loss{loss}.csv"))
+  return len(files) > 0
+
+
 def append_to_summary(
     protocol: str,
     window: int,
@@ -30,6 +48,8 @@ def append_to_summary(
   with open(latest_csv, mode="r", encoding="utf-8") as f:
     reader = csv.DictReader(f)
     for row in reader:
+      if row is None or not row.get("retransmissions"):
+        continue
       total_retries += int(row["retransmissions"])
       total_bytes += int(row["size_bytes"])
 
@@ -63,6 +83,14 @@ def append_to_summary(
 
 
 def run_exp(protocol: str, window: int, file_type: str, loss: int):
+  # Checa se este experimento já foi realizado
+  if experiment_already_exists(protocol, window, file_type, loss):
+    print(
+        f"[PULANDO] {protocol.upper()} | Win: {window} | File: {file_type} |"
+        f" Loss: {loss}% (Já existe no disco)"
+    )
+    return
+
   cmd = [
       "python",
       "client.py",
@@ -78,8 +106,10 @@ def run_exp(protocol: str, window: int, file_type: str, loss: int):
       str(window),
   ]
 
-  print(f"\n[RODANDO] {protocol.upper()} |", 
-        f"Win: {window} | File: {file_type} | Loss: {loss}%")
+  print(
+      f"\n[RODANDO] {protocol.upper()} | Win: {window} | File: {file_type} |"
+      f" Loss: {loss}%"
+  )
 
   start = time.perf_counter()
   subprocess.run(cmd)
@@ -90,16 +120,22 @@ def run_exp(protocol: str, window: int, file_type: str, loss: int):
 
 
 def main():
+  # 1. TESTES SEM PERDA (0%): Pula o que já existe e inclui Janela 16
   for ft in ["small", "medium", "large"]:
     run_exp("saw", 1, ft, 0)
-    for w in [4, 8]:
+    for w in [4, 8, 16]:  # Inclui janela 16!
       run_exp("gbn", w, ft, 0)
       run_exp("sr", w, ft, 0)
 
+  # 2. TESTES COM PERDA (5% e 10%): Foco em SMALL com Janela 8
   for loss in [5, 10]:
     run_exp("saw", 1, "small", loss)
+    run_exp("gbn", 4, "small", loss)
+    run_exp("sr", 4, "small", loss)
     run_exp("gbn", 8, "small", loss)
     run_exp("sr", 8, "small", loss)
+    run_exp("gbn", 16, "small", loss)
+    run_exp("sr", 16, "small", loss)
 
 
 if __name__ == "__main__":

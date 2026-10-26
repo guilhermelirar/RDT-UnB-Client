@@ -1,0 +1,11 @@
+protocol,window,file_type,loss,total_time_s,total_retries,throughput_kbps
+saw,1,small,0,360.72,1,23.25
+gbn,4,small,0,95.02,12,88.28
+sr,4,small,0,71.41,0,117.48
+gbn,8,small,0,33.45,0,250.77
+sr,8,small,0,34.81,0,240.97
+saw,1,medium,0,1578.52,6,26.57
+gbn,4,medium,0,376.99,52,111.26
+sr,4,medium,0,351.28,8,119.4
+gbn,8,medium,0,182.13,8,230.29
+sr,8,medium,0,171.17,8,245.03
