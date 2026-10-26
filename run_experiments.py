@@ -120,22 +120,12 @@ def run_exp(protocol: str, window: int, file_type: str, loss: int):
 
 
 def main():
-  # 1. TESTES SEM PERDA (0%): Pula o que já existe e inclui Janela 16
-  for ft in ["small", "medium", "large"]:
-    run_exp("saw", 1, ft, 0)
-    for w in [4, 8, 16]:  # Inclui janela 16!
-      run_exp("gbn", w, ft, 0)
-      run_exp("sr", w, ft, 0)
-
-  # 2. TESTES COM PERDA (5% e 10%): Foco em SMALL com Janela 8
-  for loss in [5, 10]:
-    run_exp("saw", 1, "small", loss)
-    run_exp("gbn", 4, "small", loss)
-    run_exp("sr", 4, "small", loss)
-    run_exp("gbn", 8, "small", loss)
-    run_exp("sr", 8, "small", loss)
-    run_exp("gbn", 16, "small", loss)
-    run_exp("sr", 16, "small", loss)
+    ft = "small"
+    for loss in [0, 5, 10]:
+        run_exp("saw", 1, ft, loss)
+        for w in [4, 8, 16]:
+            run_exp("gbn", w, ft, loss)
+            run_exp("sr", w, ft, loss)
 
 
 if __name__ == "__main__":
