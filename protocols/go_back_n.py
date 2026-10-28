@@ -4,15 +4,16 @@ from datetime import datetime
 from socket import timeout as TimeoutError
 
 from packet import Packet
-from rdt_session import RDTSession
 from protocols.base_protocol import BaseProtocol
+from rdt_session import RDTSession
+
 
 class GoBackN(BaseProtocol):
     MAX_RETRIES = 5
 
     def __init__(self, session: RDTSession, window_size: int) -> None:
         super().__init__(session, window_size, "gbn")
-        
+
     def run(self, group: str, segment_size: int, file_type: str):
         total = self._connect(group, segment_size, file_type)
 
@@ -26,11 +27,10 @@ class GoBackN(BaseProtocol):
         next_seq_num = 0
         total_retries = 0
         start_time = time.perf_counter()
-        
+
         while received != total:
             # requisitar todos os segumentos da janela
-            while next_seq_num < base + self.window_size and\
-                    next_seq_num < total:
+            while next_seq_num < base + self.window_size and next_seq_num < total:
                 self.session.send_req(next_seq_num)
 
                 # atualizando métricas
@@ -51,13 +51,12 @@ class GoBackN(BaseProtocol):
                 timestamp = datetime.now().isoformat()
 
                 self.collect_metrics(
-                    base, timestamp, rtt_ms, 
-                    seg.payload_size, retries_by_segment[base]
+                    base, timestamp, rtt_ms, seg.payload_size, retries_by_segment[base]
                 )
 
                 # Salvar no buffer
                 self.file_buffer[base] = seg.payload
-                
+
                 # mover janela e requisitar mais um pacote
                 received += 1
                 base += 1
@@ -67,6 +66,6 @@ class GoBackN(BaseProtocol):
             except TimeoutError:  # timeout na base -> retry da janela atual
                 if retries_this_window == self.MAX_RETRIES:
                     return
-                
+
                 retries_this_window += 1
                 next_seq_num = base
