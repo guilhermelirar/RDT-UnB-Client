@@ -1,42 +1,29 @@
 import hashlib
 from socket import timeout
-from cli import MAX_SEGMENT_SIZE, get_args
-from rdt_session import RDTSession
-from metrics import save_metrics_csv
 
+from cli import MAX_SEGMENT_SIZE, get_args
+from metrics import save_metrics_csv
 from protocols.base_protocol import BaseProtocol
 from protocols.go_back_n import GoBackN
-from protocols.stop_and_wait import StopAndWait
 from protocols.selective_repeat import SelectiveRepeat
+from protocols.stop_and_wait import StopAndWait
+from rdt_session import RDTSession
 
 PORT = 8080
 
-def save_downloaded_file(file_buffer: list[bytes], 
-                         filename: str, expected_md5: str) -> str:
-    full_content = b"".join(file_buffer)
-    
-    with open(filename, "wb") as f:
-        f.write(full_content)
-    
-    md5_hash: str = hashlib.md5(full_content).hexdigest()
-    
-    ok: bool = md5_hash.lower() == expected_md5.lower()
-    
-    if ok:
-        print(f"[Checksum OK] {md5_hash}")
-    else:
-        print(f"[ERROR] Checksum difere: esperado '{expected_md5}',",  
-              f"obtido '{md5_hash}'")
-
-    return md5_hash.lower()
 
 def get_selected_protocol(args, session: RDTSession) -> BaseProtocol:
     if args.protocol == "saw":
         return StopAndWait(session)
     elif args.protocol == "gbn":
         return GoBackN(session, args.window_size)
-    
+
     return SelectiveRepeat(session, args.window_size)
+
+
+def file_hash(file: bytes):
+    pass
+
 
 def main():
     args = get_args()
@@ -52,33 +39,31 @@ def main():
 
     # obter arquivo do servidor
     protocol.run(group, MAX_SEGMENT_SIZE, file_type)
+    content: bytes = protocol.get_content()
+    md5: str = hashlib.md5(content).hexdigest().lower()
 
-    valid_metrics = [m for m in protocol.metrics if m is not None]
+    # confirmação
+    if protocol.finalize_transfer(md5):
+        """
+        save_metrics_csv(
+            protocol.metrics,
+            group,
+            protocol.name,
+            file_type,
+            args.loss,
+            protocol.window_size,
+        )
+        """
+        print(f"Checksum OK ({md5})")
+        if mc := protocol.metrics_collector:
+            mc.print_summary()
 
-    if valid_metrics:
-      save_metrics_csv(
-          valid_metrics,
-          group,
-          protocol.name,
-          file_type,
-          args.loss,
-          protocol.window_size,
-      )
+        with open(f"{file_type}.bin", "wb") as f:
+            f.write(content)
+        return
 
-      md5: str = save_downloaded_file(protocol.file_buffer,
-                         f"bin/downloaded_{file_type}_{protocol.name}_.bin",
-                         protocol.expectedmd5)
+    print(f"ERRO: Checksum não confere ({md5}). Arquivo descartado")
 
-      session.send_fin(md5)
-      for _ in range(5):
-          try:
-              ok = session.receive_packet()
-              print(ok)
-              break
-          except:
-              print("Arquivo corrompido ou incompleto")
-    
-    session.close()
 
 if __name__ == "__main__":
     main()
