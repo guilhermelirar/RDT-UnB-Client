@@ -44,21 +44,14 @@ def main():
 
     # confirmação
     if protocol.finalize_transfer(md5):
-        """
         save_metrics_csv(
-            protocol.metrics,
-            group,
-            protocol.name,
-            file_type,
-            args.loss,
-            protocol.window_size,
+            protocol.metrics_collector, group, file_type, args.loss, args.window_size
         )
-        """
         print(f"Checksum OK ({md5})")
         if mc := protocol.metrics_collector:
             mc.print_summary()
 
-        with open(f"{file_type}.bin", "wb") as f:
+        with open(f"bin/{file_type}.bin", "wb") as f:
             f.write(content)
         return
 
