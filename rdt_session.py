@@ -48,11 +48,11 @@ class RDTSession:
                 response = Packet.parse(data)
                 return response
 
-            except socket.timeout:
+            except TimeoutError:
                 print(f"[HELLO (Timeout)] {att + 1}/{max_retries}...")
 
             except ValueError:
-                print(f"[BAD PACKET] pacote mal formado")
+                print("[BAD PACKET] pacote mal formado")
 
     def was_dropped(self, seq: int) -> bool:
         return seq in self.dropped_seq
