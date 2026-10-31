@@ -1,7 +1,6 @@
 # selective_repeat.py
 import time
 from datetime import datetime
-from socket import timeout as TimeoutError
 
 from packet import Packet
 from protocols.base_protocol import BaseProtocol
@@ -28,7 +27,6 @@ class SelectiveRepeat(BaseProtocol):
         received = 0  # nº segmentos recebido
         next_seq_num = 0
         total_retries = 0
-        start_time = time.perf_counter()
 
         while received != total:
             # deslizar janela
@@ -63,15 +61,18 @@ class SelectiveRepeat(BaseProtocol):
 
                 # atualizar métrica
                 rtt_ms = (time.perf_counter() - first_sent[seg.seq]) * 1000.0
-                timestamp = datetime.now().isoformat()
 
-                self.collect_metrics(
-                    seg.seq,
-                    timestamp,
-                    rtt_ms,
-                    seg.payload_size,
-                    retries_by_segment[seg.seq],
-                )
+                if self.metrics_collector:
+                    self.metrics_collector.collect(
+                        seg.seq,
+                        rtt_ms,
+                        seg.payload_size,
+                        retries_by_segment[seg.seq],
+                        self.timeout,  # timeout não é da sessão
+                        self.session.was_dropped(seg.seq),
+                    )
+
+                    self.metrics_collector.log_progress(base + 1)
 
                 # Salvar no buffer
                 self.file_buffer[seg.seq] = seg.payload
@@ -82,8 +83,6 @@ class SelectiveRepeat(BaseProtocol):
                 # deslizar janela
                 while base < total and self.file_buffer[base]:
                     base += 1
-
-                self.log_progress(base, total, start_time, total_retries)
 
             except TimeoutError:  # timeout na base -> retry da janela atual
                 pass

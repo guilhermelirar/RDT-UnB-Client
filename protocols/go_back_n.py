@@ -1,7 +1,6 @@
 # go_back_n.py
 import time
 from datetime import datetime
-from socket import timeout as TimeoutError
 
 from packet import Packet
 from protocols.base_protocol import BaseProtocol
@@ -26,7 +25,6 @@ class GoBackN(BaseProtocol):
         received = 0  # nº segmentos recebido
         next_seq_num = 0
         total_retries = 0
-        start_time = time.perf_counter()
 
         while received != total:
             # requisitar todos os segumentos da janela
@@ -48,11 +46,17 @@ class GoBackN(BaseProtocol):
 
                 # atualizar métrica
                 rtt_ms = (time.perf_counter() - time_sent[base]) * 1000.0
-                timestamp = datetime.now().isoformat()
+                if self.metrics_collector:
+                    self.metrics_collector.collect(
+                        base,
+                        rtt_ms,
+                        seg.payload_size,
+                        retries_by_segment[base],
+                        self.session.timeout,
+                        self.session.was_dropped(base),
+                    )
 
-                self.collect_metrics(
-                    base, timestamp, rtt_ms, seg.payload_size, retries_by_segment[base]
-                )
+                    self.metrics_collector.log_progress(base + 1)
 
                 # Salvar no buffer
                 self.file_buffer[base] = seg.payload
@@ -60,7 +64,6 @@ class GoBackN(BaseProtocol):
                 # mover janela e requisitar mais um pacote
                 received += 1
                 base += 1
-                self.log_progress(base, total, start_time, total_retries)
                 retries_this_window = 0
 
             except TimeoutError:  # timeout na base -> retry da janela atual
