@@ -75,6 +75,10 @@ class RDTSession:
         request = Packet.ack(seq)
         self.sock.sendto(request.encode(), self.server)
 
+    def send_fin(self, md5: str):
+        request = Packet.fin(md5)
+        self.sock.sendto(request.encode(), self.server)
+
     def receive_packet(self) -> Packet:
         """
         Espera por um pacote no socket, e em caso de recebimento,

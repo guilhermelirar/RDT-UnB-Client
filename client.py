@@ -12,13 +12,13 @@ from protocols.selective_repeat import SelectiveRepeat
 PORT = 8080
 
 def save_downloaded_file(file_buffer: list[bytes], 
-                         filename: str, expected_md5: str) -> bool:
+                         filename: str, expected_md5: str) -> str:
     full_content = b"".join(file_buffer)
     
     with open(filename, "wb") as f:
         f.write(full_content)
     
-    md5_hash = hashlib.md5(full_content).hexdigest()
+    md5_hash: str = hashlib.md5(full_content).hexdigest()
     
     ok: bool = md5_hash.lower() == expected_md5.lower()
     
@@ -28,7 +28,7 @@ def save_downloaded_file(file_buffer: list[bytes],
         print(f"[ERROR] Checksum difere: esperado '{expected_md5}',",  
               f"obtido '{md5_hash}'")
 
-    return ok
+    return md5_hash.lower()
 
 def get_selected_protocol(args, session: RDTSession) -> BaseProtocol:
     if args.protocol == "saw":
@@ -65,10 +65,19 @@ def main():
           protocol.window_size,
       )
 
-    save_downloaded_file(protocol.file_buffer,
+      md5: str = save_downloaded_file(protocol.file_buffer,
                          f"bin/downloaded_{file_type}_{protocol.name}_.bin",
                          protocol.expectedmd5)
 
+      session.send_fin(md5)
+      for _ in range(5):
+          try:
+              ok = session.receive_packet()
+              print(ok)
+              break
+          except:
+              print("Arquivo corrompido ou incompleto")
+    
     session.close()
 
 if __name__ == "__main__":

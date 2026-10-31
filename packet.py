@@ -73,6 +73,12 @@ class Packet:
         p = Packet("ACK")
         p._fields = {"seq": seq}
         return p
+    
+    @staticmethod
+    def fin(md5: str) -> Packet:
+        p = Packet("FIN")
+        p._fields = {"checksum": md5}
+        return p
 
     @staticmethod
     def parse(raw_bytes: bytes) -> Packet:

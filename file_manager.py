@@ -15,3 +15,5 @@ def save_downloaded_file(file_buffer: list[bytes], filename: str,
         print(f"[ERROR] Checksum difere: esperado '{expected_md5}',",
               "obtido '{md5_hash}'")
 
+    return md5_hash
+
