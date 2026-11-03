@@ -35,6 +35,7 @@ class GoBackN(BaseProtocol):
                 if retries_this_window:
                     retries_by_segment[next_seq_num] += 1
                     total_retries += 1
+                    time_sent[next_seq_num] = time.perf_counter() # TODO
                 else:
                     time_sent[next_seq_num] = time.perf_counter()
 

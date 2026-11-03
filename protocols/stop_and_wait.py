@@ -28,12 +28,13 @@ class StopAndWait(BaseProtocol):
         # Enquanto há DATA para receber
         while seq < total:
             retries = 0
-            req_sent_time = time.perf_counter()
+            #req_sent_time = time.perf_counter()
 
             # Tenta REQ (seq) até 'MAX_RETRIES' vezes
             while retries < self.MAX_RETRIES:
                 try:
                     self.session.send_req(seq)
+                    req_sent_time = time.perf_counter()
                     segment: Packet = self._get_next_segment(seq)
                     rsp_time = time.perf_counter()
 

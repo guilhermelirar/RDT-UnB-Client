@@ -60,7 +60,8 @@ class SelectiveRepeat(BaseProtocol):
                     continue
 
                 # atualizar métrica
-                rtt_ms = (time.perf_counter() - first_sent[seg.seq]) * 1000.0
+                #rtt_ms = (time.perf_counter() - first_sent[seg.seq]) * 1000.0
+                rtt_ms = (time.perf_counter() - last_sent[seg.seq]) * 1000.0
 
                 if self.metrics_collector:
                     self.metrics_collector.collect(
