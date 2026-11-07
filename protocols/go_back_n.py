@@ -8,7 +8,7 @@ from rdt_session import RDTSession
 
 
 class GoBackN(BaseProtocol):
-    MAX_RETRIES = 5
+    MAX_RETRIES = 100
 
     def __init__(self, session: RDTSession, window_size: int) -> None:
         super().__init__(session, window_size, "gbn")
@@ -61,6 +61,8 @@ class GoBackN(BaseProtocol):
 
                 # Salvar no buffer
                 self.file_buffer[base] = seg.payload
+                
+                self.session.send_ack(base)
 
                 # mover janela e requisitar mais um pacote
                 received += 1

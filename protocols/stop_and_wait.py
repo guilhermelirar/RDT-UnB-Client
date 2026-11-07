@@ -10,11 +10,12 @@ from rdt_session import RDTSession
 
 
 class StopAndWait(BaseProtocol):
-    MAX_RETRIES = 5
+    MAX_RETRIES = 20
 
     def __init__(self, session: RDTSession) -> None:
         """Inicializa com a sessão e janela de tamanho 1 (um segmento por RTT)"""
         super().__init__(session, 1, "saw")
+
 
     def run(self, group: str, segment_size: int, file_type: str):
         """
@@ -54,6 +55,7 @@ class StopAndWait(BaseProtocol):
                         self.metrics_collector.log_progress(seq + 1)
 
                     self.file_buffer[seq] = segment.payload
+                    self.session.send_ack(seq) # TODO
 
                     seq += 1
                     break  # sai do loop em caso de sucesso

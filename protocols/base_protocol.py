@@ -8,7 +8,7 @@ from rdt_session import RDTSession
 
 
 class BaseProtocol:
-    MAX_RETRIES = 5
+    MAX_RETRIES = 100
 
     def __init__(self, session: RDTSession, window_size: int, name: str) -> None:
         self.session = session
@@ -30,6 +30,9 @@ class BaseProtocol:
         return total
 
     def finalize_transfer(self, md5: str) -> bool:
+        if b"" in self.file_buffer:
+            return False
+
         for _ in range(self.MAX_RETRIES):
             self.session.send_fin(md5)
             try:
@@ -43,6 +46,8 @@ class BaseProtocol:
         return False
 
     def _get_next_segment(self, seq: int) -> Packet:
+ 
+
         while True:
             seg: Packet = self.session.receive_packet()
 

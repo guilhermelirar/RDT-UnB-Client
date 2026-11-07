@@ -8,11 +8,18 @@ from rdt_session import RDTSession
 
 
 class SelectiveRepeat(BaseProtocol):
-    MAX_RETRIES = 5
+    MAX_RETRIES = 100
 
-    def __init__(self, session: RDTSession, window_size: int) -> None:
+    def __init__(self, session: RDTSession, window_size: int, is_adaptive=False) -> None:
         super().__init__(session, window_size, "sr")
         self.timeout = 0.5
+
+        # EWMA
+        self.is_adaptive = is_adaptive
+        self.alpha = 0.125
+        self.beta = 0.25
+        self.rtt_est = 0.4    # Valor inicial conservador (~400ms)
+        self.dev_rtt = 0.1    # Desvio inicial
 
     def run(self, group: str, segment_size: int, file_type: str):
         total = self._connect(group, segment_size, file_type)
@@ -77,6 +84,8 @@ class SelectiveRepeat(BaseProtocol):
 
                 # Salvar no buffer
                 self.file_buffer[seg.seq] = seg.payload
+                # TODO
+                self.session.send_ack(seg.seq)
 
                 # mover janela e requisitar mais um pacote
                 received += 1
