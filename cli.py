@@ -11,12 +11,12 @@ MAX_SEGMENT_SIZE = 512
 
 # cliente envia REQ
 # aguarda pacote de DATA
-# envia ACK e solicita proximo segmento 
+# envia ACK e solicita proximo segmento
 # (timeout() -> retransmitir o REQ)
 def create_parser() -> argparse.ArgumentParser:
     """
-    Retorna um argparse.ArgumentParser capaz de lidar 
-    com os argumentos opocionais --server, --file, e o 
+    Retorna um argparse.ArgumentParser capaz de lidar
+    com os argumentos opocionais --server, --file, e o
     argumento obrigatório --group
     """
     parser = argparse.ArgumentParser('Cliente RDT-UnB')
@@ -46,7 +46,7 @@ def create_parser() -> argparse.ArgumentParser:
             help="Protocolo (saw, gbn, sr)",
             required=True
     )
-    
+
     # grupo
     parser.add_argument(
             "--group", "-g",
@@ -54,7 +54,7 @@ def create_parser() -> argparse.ArgumentParser:
             help="Identificador do grupo",
             required=True
     )
-    
+
     # perda da rede simulada
     parser.add_argument(
             "--loss", "-l",
@@ -71,6 +71,25 @@ def create_parser() -> argparse.ArgumentParser:
             help="Window size for Go-Back-N and Selective Repeat",
     )
 
+    # RTT Adaptativo
+    parser.add_argument(
+        "--adaptive",
+        action="store_true",
+        help="Ativa RTT adaptativo (EWMA)",
+    )
+    parser.add_argument(
+        "--alpha",
+        type=float,
+        default=0.125,
+        help="Alfa do EWMA (padrão 0.125)",
+    )
+    parser.add_argument(
+        "--beta",
+        type=float,
+        default=0.25,
+        help="Beta do EWMA (padrão 0.25)",
+    )
+
     return parser
 
 def get_args() -> argparse.Namespace:
@@ -80,4 +99,3 @@ def get_args() -> argparse.Namespace:
     """
     parser = create_parser()
     return parser.parse_args()
-

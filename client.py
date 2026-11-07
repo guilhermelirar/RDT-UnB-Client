@@ -18,8 +18,13 @@ def get_selected_protocol(args, session: RDTSession) -> BaseProtocol:
     elif args.protocol == "gbn":
         return GoBackN(session, args.window_size)
 
-    return SelectiveRepeat(session, args.window_size)
-
+    return SelectiveRepeat(
+        session,
+        args.window_size,
+        is_adaptive=args.adaptive,
+        alpha=args.alpha,
+        beta=args.beta,
+    )
 
 def file_hash(file: bytes):
     pass
@@ -45,7 +50,12 @@ def main():
     # confirmação
     if protocol.finalize_transfer(md5):
         save_metrics_csv(
-            protocol.metrics_collector, group, file_type, args.loss, args.window_size
+            protocol.metrics_collector,
+            group,
+            file_type,
+            args.loss,
+            args.window_size,
+            is_adaptive=args.adaptive, # <-- Passe aqui!
         )
         print(f"Checksum OK ({md5})")
         if mc := protocol.metrics_collector:

@@ -10,16 +10,35 @@ from rdt_session import RDTSession
 class SelectiveRepeat(BaseProtocol):
     MAX_RETRIES = 100
 
-    def __init__(self, session: RDTSession, window_size: int, is_adaptive=False) -> None:
+    def __init__(
+        self,
+        session: RDTSession,
+        window_size: int,
+        is_adaptive=False,
+        alpha=0.125,
+        beta=0.25,
+    ) -> None:
         super().__init__(session, window_size, "sr")
         self.timeout = 0.5
 
         # EWMA
         self.is_adaptive = is_adaptive
-        self.alpha = 0.125
-        self.beta = 0.25
-        self.rtt_est = 0.4    # Valor inicial conservador (~400ms)
-        self.dev_rtt = 0.1    # Desvio inicial
+        self.alpha = alpha
+        self.beta = beta
+        self.rtt_est = 0.4  # Valor inicial conservador (~400ms)
+        self.dev_rtt = 0.1  # Desvio inicial
+
+    def _update_rtt_estimator(self, measured_rtt_s: float) -> tuple[float, float]:
+        if not self.is_adaptive:
+            return 0.0, 0.0
+
+        self.rtt_est = (1.0 - self.alpha) * self.rtt_est + self.alpha * measured_rtt_s
+        self.dev_rtt = (1.0 - self.beta) * self.dev_rtt + self.beta * abs(
+            measured_rtt_s - self.rtt_est
+        )
+        self.timeout = self.rtt_est + 4.0 * self.dev_rtt
+
+        return self.rtt_est, self.dev_rtt
 
     def run(self, group: str, segment_size: int, file_type: str):
         total = self._connect(group, segment_size, file_type)
@@ -67,8 +86,11 @@ class SelectiveRepeat(BaseProtocol):
                     continue
 
                 # atualizar métrica
-                #rtt_ms = (time.perf_counter() - first_sent[seg.seq]) * 1000.0
+                # rtt_ms = (time.perf_counter() - first_sent[seg.seq]) * 1000.0
                 rtt_ms = (time.perf_counter() - last_sent[seg.seq]) * 1000.0
+                if self.is_adaptive and retries_by_segment[seg.seq] == 0:
+                    rtt_s = rtt_ms / 1000.0
+                    self._update_rtt_estimator(rtt_s)
 
                 if self.metrics_collector:
                     self.metrics_collector.collect(
@@ -78,6 +100,9 @@ class SelectiveRepeat(BaseProtocol):
                         retries_by_segment[seg.seq],
                         self.timeout,  # timeout não é da sessão
                         self.session.was_dropped(seg.seq),
+                        rtt_est=self.rtt_est if self.is_adaptive else 0.0,
+                        dev_rtt=self.dev_rtt if self.is_adaptive else 0.0,
+                        timeout_calc=self.timeout,
                     )
 
                     self.metrics_collector.log_progress(base + 1)

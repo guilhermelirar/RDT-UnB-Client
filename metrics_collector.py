@@ -41,6 +41,9 @@ class MetricsCollector:
         retries: int,
         timeout_s: float,
         was_dropped: bool,
+        rtt_est: float = 0.0,
+        dev_rtt: float = 0.0,
+        timeout_calc = 0.0,
     ):
         # Criar o dicionário de métricas conforme especificação do trabalho
         throughput_kbps = (payload_size * 8.0) / rtt_ms if rtt_ms > 0 else 0.0
@@ -56,6 +59,9 @@ class MetricsCollector:
             "window_size": self.window_size,
             "protocol": self.protocol_name,
             "simulated_loss": 1 if was_dropped else 0,
+            "rtt_est": rtt_est if rtt_est != 0.0 else rtt_ms,
+            "rtt_dev": dev_rtt,
+            "timeout_calc": timeout_calc if timeout_calc > 0.0 else timeout_s * 1000.0,
         }
 
         self._total_retries += retries
