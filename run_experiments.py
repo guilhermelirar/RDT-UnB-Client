@@ -13,7 +13,7 @@ def main():
     # 1. VISÃO INTEGRADA (Seção 5 do Relatório - Arquivo 'small ')
     # Cenários: SAW (W=1), GBN (W=16 Fixo/Adapt), SR (W=16 Fixo/Adapt)
     # -------------------------------------------------------------
-    base_args = ["python", "main.py", "--group", GROUP, "--file", "small"]
+    base_args = ["python", "client.py", "--group", GROUP, "--file", "small"]
 
     # SAW Fixo e com perda
     run_cmd(base_args + ["-p", "saw", "-w", "1", "-l", "0"])
@@ -37,6 +37,13 @@ def main():
         run_cmd(base_args + ["-p", "sr", "-w", "16", "-l", str(loss)])
         # Adaptativo
         run_cmd(base_args + ["-p", "sr", "-w", "16", "-l", str(loss), "--adaptive"])
+
+    # -------------------------------------------------------------
+    # VARIAÇÃO DE JANELA (W=4 e W=8) - Timeout Fixo (Loss 0%)
+    # -------------------------------------------------------------
+    for w in [4, 8]:
+        run_cmd(base_args + ["-p", "gbn", "-w", str(w), "-l", "0"])
+        run_cmd(base_args + ["-p", "sr", "-w", str(w), "-l", "0"])
 
     # -------------------------------------------------------------
     # 3. SENSIBILIDADE DE ALFA E BETA (Seção 2 do Relatório)

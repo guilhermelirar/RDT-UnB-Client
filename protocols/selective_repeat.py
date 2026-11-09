@@ -32,11 +32,15 @@ class SelectiveRepeat(BaseProtocol):
         if not self.is_adaptive:
             return 0.0, 0.0
 
-        self.rtt_est = (1.0 - self.alpha) * self.rtt_est + self.alpha * measured_rtt_s
+        # 1. Calcula o desvio usando o RTT estimado antigo
         self.dev_rtt = (1.0 - self.beta) * self.dev_rtt + self.beta * abs(
             measured_rtt_s - self.rtt_est
         )
-        self.timeout = self.rtt_est + 4.0 * self.dev_rtt
+
+        self.rtt_est = (1.0 - self.alpha) * self.rtt_est + self.alpha * measured_rtt_s
+
+        calculated_timeout = self.rtt_est + 4.0 * self.dev_rtt
+        self.timeout = max(0.25, calculated_timeout)
 
         return self.rtt_est, self.dev_rtt
 
